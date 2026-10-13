@@ -21,7 +21,9 @@
 
   <main class="workers-page">
     <header class="page-header">
-      <a class="schedule-link" href="/workers.html">&larr; All Workers</a>
+      
+      <a class="schedule-link" href="/workers/workers.html">&larr; All Workers</a>
+      
       <a class="brand" href="/owner-view/owner-view.html" aria-label="JobFlow schedule">
         <span class="brand-mark">J</span>
         <span>JobFlow</span>
@@ -48,7 +50,7 @@
         <input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required>
 
         <div class="form-actions">
-          <a class="secondary-button cancel-link" href="/workers.html">Cancel</a>
+          <a class="secondary-button cancel-link" href="/workers/workers.html">Cancel</a>
           <button class="primary-button" type="submit">Create Worker</button>
         </div>
       </form>
@@ -94,7 +96,7 @@
         const result = await response.json();
         if (!response.ok) throw new Error(result.message || 'Unable to add worker.');
 
-        window.location.href = `/workers.html?added=1&workerId=${encodeURIComponent(result.worker.id)}`;
+        window.location.href = `/workers/workers.html?added=1&workerId=${encodeURIComponent(result.worker.id)}`;
       } catch (error) {
         message.textContent = error.message;
       }
