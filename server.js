@@ -40,8 +40,9 @@ app.use(session({
   }
 }));
 app.use(express.static(__dirname));
-
-const jobUploadDirectory = path.join(__dirname, '.private-uploads', 'jobs');
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'login', 'login.html'));
+});const jobUploadDirectory = path.join(__dirname, '.private-uploads', 'jobs');
 fs.mkdirSync(jobUploadDirectory, { recursive: true });
 
 const payslipsDirectory = path.join(__dirname, '.private-uploads', 'payslips');
