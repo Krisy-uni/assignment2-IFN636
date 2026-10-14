@@ -5,6 +5,7 @@ const cors = require('cors');
 require('dotenv').config();
 const Job = require('./models/job');
 const User = require('./models/User');
+const Payslip = require('./models/Payslip');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
