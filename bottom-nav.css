@@ -16,12 +16,22 @@
 
 .worker-view .app-bottom-nav,
 .owner-view .app-bottom-nav {
-  position: absolute;
+  position: relative;
   top: auto;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: auto;
+  left: auto;
+  right: auto;
   width: 100%;
+  flex: 0 0 auto;
+  margin-top: auto;
+}
+
+.owner-view > .section-9,
+.worker-view > .div > .section {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 24px;
 }
 
 .app-bottom-nav-item {
