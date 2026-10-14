@@ -120,7 +120,24 @@
   flex: 0 0 auto;
   margin-top: auto;
 }
+/* Desktop retains the 393 x 852 phone preview; mobile follows the viewport. */
 @media (max-width: 600px) {
-  .owner-view-empty { min-height: 100dvh; }
-  .owner-view-empty .frame { height: 100dvh; border-radius: 0; }
+  .owner-view,
+  .worker-view,
+  .owner-view-empty {
+    min-height: 0;
+    height: 100vh;
+    height: 100dvh;
+  }
+  .worker-view > .div,
+  .owner-view-empty > .frame {
+    height: 100%;
+    min-height: 0;
+  }
+  .owner-view,
+  .worker-view > .div,
+  .owner-view-empty > .frame {
+    border-radius: 0;
+    box-shadow: none;
+  }
 }
