@@ -8,6 +8,9 @@
 <link rel="stylesheet" href="owner-view-empty.css">
 <link rel="stylesheet" href="/bottom-nav.css">
 <script src="/bottom-nav.js" defer></script>
+<style>
+.owner-view-empty .calendar-dot-finished { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #8452cc; }
+</style>
 </head>
 <body>
 <div class="owner-view-empty" data-model-id="19:1305"><div class="frame" ><div class="section" ><header class="header" ><button class="button" ><div class="text-wrapper" >☰</div></button>
@@ -152,7 +155,7 @@
     }
   }
 
-  const calendarStart = '2026-09-01';
+  let calendarStart = formatDateKey(new Date());
   const calendarDaysCount = 14;
 
   let allJobs = [];
@@ -192,6 +195,8 @@
   function getDotClass(status) {
     const normalised = normaliseStatus(status);
 
+    if (normalised === 'finished') return 'calendar-dot-finished';
+
     if (normalised === 'accepted') {
       return 'italic-text-2';
     }
@@ -201,6 +206,25 @@
     }
 
     return 'italic-text';
+  }
+
+  function renderDateRange() {
+    const start = createDateFromKey(calendarStart);
+    const end = new Date(start);
+    end.setDate(end.getDate() + calendarDaysCount - 1);
+    document.getElementById('dateRange').textContent =
+      `${start.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} – ${end.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    document.querySelectorAll('.container-3 .text-wrapper-3').forEach((label, index) => {
+      const date = new Date(start);
+      date.setDate(date.getDate() + index);
+      label.textContent = date.toLocaleDateString('en-AU', { weekday: 'short' }).toUpperCase();
+    });
+  }
+
+  function changeCalendarRange(offset) {
+    const start = createDateFromKey(calendarStart);
+    start.setDate(start.getDate() + offset);
+    window.location.href = `/owner-view/owner-view.html?date=${formatDateKey(start)}`;
   }
 
   function renderCalendar() {
@@ -348,7 +372,11 @@
         new URLSearchParams(window.location.search);
 
       selectedDate =
-        params.get('date') || '2026-09-04';
+        params.get('date') || formatDateKey(new Date());
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDate) || Number.isNaN(createDateFromKey(selectedDate).getTime())) {
+        selectedDate = formatDateKey(new Date());
+      }
+      calendarStart = selectedDate;
 
       if (getJobsForDate(selectedDate).length > 0) {
         window.location.href =
@@ -356,8 +384,7 @@
         return;
       }
 
-      document.getElementById('dateRange').textContent =
-        '1 Sep – 14 Sep, 2026';
+      renderDateRange();
 
       renderCalendar();
       renderStatistics();
@@ -372,6 +399,8 @@
     }
   }
 
+  document.querySelector('.button-2').addEventListener('click', () => changeCalendarRange(-calendarDaysCount));
+  document.querySelector('.button-3').addEventListener('click', () => changeCalendarRange(calendarDaysCount));
   loadEmptyCalendar();
 </script>
 </body>
