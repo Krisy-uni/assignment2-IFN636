@@ -222,8 +222,8 @@ This method describes a simple HTTP demonstration deployment.
 5. Clone the repository and install dependencies:
 
    ```bash
-   git clone https://github.com/Krisy-uni/test.git
-   cd test
+   git clone https://github.com/Krisy-uni/assignment2-IFN636.git
+   cd assignment2-IFN636
    npm install
    ```
 
