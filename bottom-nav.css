@@ -80,3 +80,21 @@
     transition: color 120ms ease-out;
   }
 }
+
+.app-bottom-nav {
+  position: fixed !important;
+  top: auto !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%);
+  width: min(100%, 393px) !important;
+  z-index: 1000;
+}
+
+
+.owner-view .section-9 {
+  padding-bottom: calc(
+    88px + env(safe-area-inset-bottom, 0px)
+  );
+}
