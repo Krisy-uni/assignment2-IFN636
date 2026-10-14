@@ -80,7 +80,7 @@
 
 <button
   class="button-74"
-  onclick="window.location.href='owner-view-empty.html'"
+  onclick="window.location.href='/owner-view-empty/owner-view-empty.html'"
 >
   <div class="text-margin">
     <div class="text-42">
@@ -399,14 +399,14 @@
       button.addEventListener('click', () => {
         if (jobs.length === 0) {
           window.location.href =
-            `owner-view-empty.html?date=${encodeURIComponent(dateKey)}`;
+            `/owner-view-empty/owner-view-empty.html?date=${encodeURIComponent(dateKey)}`;
           return;
         }
 
         selectedDate = dateKey;
 
         const url =
-          `owner-view.html?date=${encodeURIComponent(dateKey)}`;
+          `/owner-view/owner-view.html?date=${encodeURIComponent(dateKey)}`;
 
         window.history.replaceState({}, '', url);
 

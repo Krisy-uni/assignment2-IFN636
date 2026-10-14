@@ -116,7 +116,7 @@
 <div class="button-wrapper">
   <button
     class="button-18"
-    onclick="window.location.href='create-job.html'"
+    onclick="window.location.href='/create%20job/create-job.html'"
   >
     <div class="text-wrapper-16">+ Create Job</div>
   </button>
@@ -259,7 +259,7 @@
       button.addEventListener('click', () => {
         if (jobs.length > 0) {
           window.location.href =
-            `owner-view.html?date=${encodeURIComponent(dateKey)}`;
+            `/owner-view/owner-view.html?date=${encodeURIComponent(dateKey)}`;
           return;
         }
 
@@ -268,7 +268,7 @@
         window.history.replaceState(
           {},
           '',
-          `owner-view-empty.html?date=${encodeURIComponent(dateKey)}`
+          `/owner-view-empty/owner-view-empty.html?date=${encodeURIComponent(dateKey)}`
         );
 
         renderCalendar();
@@ -352,7 +352,7 @@
 
       if (getJobsForDate(selectedDate).length > 0) {
         window.location.href =
-          `owner-view.html?date=${encodeURIComponent(selectedDate)}`;
+          `/owner-view/owner-view.html?date=${encodeURIComponent(selectedDate)}`;
         return;
       }
 
