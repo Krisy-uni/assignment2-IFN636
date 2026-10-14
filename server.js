@@ -23,6 +23,10 @@ const { isClockInPastGracePeriod } = require('./worker-time-rules');
 const session = require('express-session');
 const path = require('path');
 const multer = require('multer');
+const WorkerCreationService = require('./services/WorkerCreationService');
+const createWorkerHandler = require('./routes/createWorkerHandler');
+
+const workerCreation = new WorkerCreationService();
 
 const app = express();
 app.set('trust proxy', 1);
@@ -609,40 +613,7 @@ app.get('/api/workers', requireOwner, async (req, res) => {
   }
 });
 
-app.post('/api/workers', requireOwner, async (req, res) => {
-  try {
-    const name = String(req.body.name || '').trim();
-    const phone = String(req.body.phone || '').trim();
-    const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '');
-
-    if (!name || !email || !phone || password.length < 8) {
-      return res.status(400).json({
-        message: 'Name, email, phone, and a password of at least 8 characters are required.'
-      });
-    }
-
-    const worker = await User.create({
-      name,
-      phone,
-      email,
-      password: await bcrypt.hash(password, 10),
-      role: 'Worker',
-      isActive: true
-    });
-
-    res.status(201).json({
-      message: 'Worker added.',
-      worker: toPublicUser(worker)
-    });
-  } catch (error) {
-    if (error.code === 11000) {
-      return res.status(409).json({ message: 'That email is already in use.' });
-    }
-
-    res.status(400).json({ message: error.message });
-  }
-});
+app.post('/api/workers', requireOwner, createWorkerHandler(workerCreation, toPublicUser));
 
 app.patch('/api/workers/:id/status', requireOwner, async (req, res) => {
   try {
