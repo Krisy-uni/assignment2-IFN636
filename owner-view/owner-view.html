@@ -185,6 +185,11 @@
 <div class="text-wrapper-149" >My Profile</div></a></div></div>
 
 <script>
+  // Keep the add button outside the scrolling calendar/job content.
+  const ownerFrame = document.querySelector('.owner-view');
+  const addJobButton = ownerFrame.querySelector('.button-80');
+  ownerFrame.appendChild(addJobButton);
+
   let currentUser;
   try {
     currentUser = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
