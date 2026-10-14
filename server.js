@@ -906,6 +906,40 @@ app.get('/api/worker/payslip', requireWorker, async (req, res) => {
       return res.status(400).json({ message: 'A valid weekStart date is required.' });
     }
 
+    const released = await Payslip.findOne({
+  workerId: req.worker._id,
+  weekStart: week.start
+}).lean();
+
+if (released) {
+  const data = released.snapshot;
+
+  return res.json({
+    worker: data.worker,
+    weekStart: released.weekStart,
+    weekEnd: released.weekEnd,
+    yearStart: data.yearStart,
+    days: data.days,
+    isSent: true,
+    current: {
+      minutes: data.current.minutes,
+      gross: data.current.gross,
+      superAmount: data.current.superAmount,
+      tax: data.current.tax,
+      net: data.current.netPay,
+      hourlyRate: data.current.rate
+    },
+    ytd: {
+      minutes: data.ytd.minutes,
+      gross: data.ytd.gross,
+      superAmount: data.ytd.superAmount,
+      tax: data.ytd.tax,
+      net: data.ytd.netPay,
+      hourlyRate: data.ytd.rate
+    }
+  });
+}
+    
     const workerName = req.worker.name;
     const yearStart = getAustralianFinancialYearStart(week.end);
 
