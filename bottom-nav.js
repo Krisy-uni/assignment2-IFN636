@@ -66,7 +66,9 @@
     });
   }
 
- const appFrame = navHost.closest('.owner-view, .worker-view');
+ const appFrame = navHost.closest(
+  '.owner-view, .worker-view > .div'
+);
 
 navHost.replaceWith(navigation);
 
