@@ -766,7 +766,11 @@ app.post('/api/jobs/:id/clock-out', requireWorker, async (req, res) => {
   }
 });
 
+
 app.post('/api/jobs/:id/completion', requireWorker, parseCompletionPhotos, async (req, res) => {
+  let uploadedIds = [];
+  let jobSaved = false;
+
   try {
     const job = await Job.findById(req.params.id);
 
@@ -778,32 +782,78 @@ app.post('/api/jobs/:id/completion', requireWorker, parseCompletionPhotos, async
       job.assignedWorker !== req.worker.name ||
       String(job.status).toLowerCase() !== 'accepted'
     ) {
-      return res.status(403).json({ message: 'This job is not assigned to you.' });
+      return res.status(403).json({
+        message: 'This job is not assigned to you.'
+      });
     }
 
     if (job.completionSubmittedAt) {
-      return res.status(409).json({ message: 'This job has already been submitted.' });
+      return res.status(409).json({
+        message: 'This job has already been submitted.'
+      });
     }
 
-    job.completionNote = String(req.body.note || '').trim();
-    job.completionPhotos = (req.files || []).map(file => file.filename);
-    job.completionSubmittedAt = new Date();
-    job.status = 'Finished';
-    job.hoursApprovalStatus = 'Pending';
-    job.hoursApprovedAt = null;
-    job.hoursApprovedBy = null;
-    job.approvedClockInSource = null;
-    job.approvedClockOutSource = null;
-    job.approvedClockInAt = null;
-    job.approvedClockOutAt = null;
-    job.approvedHourlyRate = null;
-    await job.save();
+    const photos = await saveCompletionPhotos(
+      req.files || [],
+      job._id
+    );
 
-    res.json({ message: 'Completed job submitted for approval.', job });
+    uploadedIds = photos.uploadedIds;
+
+    const savedJob = await Job.findOneAndUpdate(
+      {
+        _id: job._id,
+        assignedWorker: req.worker.name,
+        status: job.status,
+        completionSubmittedAt: null
+      },
+      {
+        $set: {
+          completionNote: String(req.body.note || '').trim(),
+          completionPhotos: photos.filenames,
+          completionSubmittedAt: new Date(),
+          status: 'Finished',
+          hoursApprovalStatus: 'Pending',
+          hoursApprovedAt: null,
+          hoursApprovedBy: null,
+          approvedClockInSource: null,
+          approvedClockOutSource: null,
+          approvedClockInAt: null,
+          approvedClockOutAt: null,
+          approvedHourlyRate: null
+        }
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!savedJob) {
+      await removeStoredPhotos(uploadedIds);
+      uploadedIds = [];
+
+      return res.status(409).json({
+        message: 'This job has changed or was already submitted. Please refresh.'
+      });
+    }
+
+    jobSaved = true;
+
+    res.json({
+      message: 'Completed job submitted for approval.',
+      job: savedJob
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    if (!jobSaved) {
+      await removeStoredPhotos(uploadedIds);
+    }
+
+    console.error('Completion submission failed:', error);
+
+    res.status(500).json({
+      message: 'Unable to submit completed job. Please try again.'
+    });
   }
 });
+
 
 app.get('/api/timesheets', requireOwner, async (req, res) => {
   try {
