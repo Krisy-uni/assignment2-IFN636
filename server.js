@@ -57,22 +57,95 @@ const photoExtensions = {
 };
 
 const completionPhotoUpload = multer({
-  storage: multer.diskStorage({
-    destination: jobUploadDirectory,
-    filename: (req, file, callback) => {
-      callback(null, `${crypto.randomUUID()}${photoExtensions[file.mimetype] || ''}`);
-    }
-  }),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+    files: 10
+  },
   fileFilter: (req, file, callback) => {
+    const allowed = Boolean(photoExtensions[file.mimetype]);
+
     callback(
-      photoExtensions[file.mimetype]
+      allowed
         ? null
         : new Error('Only JPG, PNG, and WebP photos are supported.'),
-      Boolean(photoExtensions[file.mimetype])
+      allowed
     );
   }
 });
+
+function getPhotoBucket() {
+  if (mongoose.connection.readyState !== 1) {
+    throw new Error('Database is not connected. Please try again.');
+  }
+
+  return new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+    bucketName: 'completionPhotos'
+  });
+}
+
+async function removeStoredPhotos(ids) {
+  if (!ids.length) return;
+
+  try {
+    const bucket = getPhotoBucket();
+    const results = await Promise.allSettled(
+      ids.map(id => bucket.delete(id))
+    );
+
+    results.forEach(result => {
+      if (result.status === 'rejected') {
+        console.error('Photo cleanup failed:', result.reason);
+      }
+    });
+  } catch (error) {
+    console.error('Photo cleanup failed:', error);
+  }
+}
+
+async function saveCompletionPhotos(files, jobId) {
+  const bucket = getPhotoBucket();
+  const filenames = [];
+  const uploadedIds = [];
+
+  try {
+    for (const file of files) {
+      const filename =
+        `${crypto.randomUUID()}${photoExtensions[file.mimetype]}`;
+
+      const upload = bucket.openUploadStream(filename, {
+        metadata: {
+          jobId: String(jobId),
+          contentType: file.mimetype
+        }
+      });
+
+      try {
+        await new Promise((resolve, reject) => {
+          upload.once('finish', resolve);
+          upload.once('error', reject);
+          upload.end(file.buffer);
+        });
+      } catch (error) {
+        try {
+          await upload.abort();
+        } catch (cleanupError) {
+          console.error('Incomplete upload cleanup failed:', cleanupError);
+        }
+
+        throw error;
+      }
+
+      uploadedIds.push(upload.id);
+      filenames.push(filename);
+    }
+
+    return { filenames, uploadedIds };
+  } catch (error) {
+    await removeStoredPhotos(uploadedIds);
+    throw error;
+  }
+}
 
 function parseCompletionPhotos(req, res, next) {
   completionPhotoUpload.array('photos')(req, res, error => {
