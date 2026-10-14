@@ -1,14 +1,19 @@
-
 # Calendar-based Work Scheduling Web Application
+
+JobFlow is a mobile-first web application designed to support job scheduling, worker allocation, timesheet approval and payslip management for small trade businesses.
+
+## Deployment （either link is okay）
+
+https://test-aunk.onrender.com/login/login.html
 
 ## Demo Login Accounts
 
-The following demo accounts can be used to test role-based access.
+The following demo accounts can be used to test Owner and Worker access.
 
 ### Owner Account
 
 - **Email:** `owner@jobflow.com`
-- **Password:** `Owner123`
+- **Password:** `owner123`
 - **Redirect:** `/owner-view/owner-view.html`
 
 ### Worker Accounts
@@ -20,68 +25,360 @@ The following demo accounts can be used to test role-based access.
 | Emma Brown | `emma@jobflow.com` | `Worker123` |
 | James Wilson | `james@jobflow.com` | `Worker123` |
 
-All Worker accounts are redirected to `/worker-view/worker-view.html` after successful login.
+Worker accounts are redirected to `/worker-view/worker-view.html` after successful login.
+
+These accounts are provided for demonstration and testing only.
 
 
 
-A mobile-first web application designed to support job scheduling, allocation and worker management for small trade businesses.
+## Main Features
 
-## Setup
+### Owner Features
 
-1. Install the dependencies with `npm install`.
-2. Configure `MONGODB_URI` in `.env` and make sure MongoDB is available.
-3. Run `node seed-users.js` to create the demo accounts.
-4. Optionally run `node seed.js` to add demo jobs. This deletes **all existing jobs** in the configured database first; use only with a fresh or disposable database.
-5. Start the server with `node server.js` and open `http://localhost:3000/login/login.html`.
+#### Features Completed in Assignment 1
 
-The app uses the Express server and MongoDB; opening an HTML file directly will not provide its API or session functionality.
+##### 1. Calendar and Job Scheduling
 
-## Email Configuration
+- View scheduled jobs in a two-week calendar.
+- Select a date to view its jobs.
+- Identify Pending, Accepted, Declined and Finished jobs through status indicators.
+- Create jobs with task details, scheduled times, location and client information.
 
-Forgot-password reset links are emailed and require an SMTP account. Changing a password while signed in from **My Profile** does not use email. Payslips are pushed to the Worker app and are not emailed. Configure these variables in `.env` to enable reset emails:
+##### 2. Worker Allocation
 
-```env
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=your-smtp-user
-SMTP_PASS=your-smtp-password
-SMTP_FROM=JobFlow <no-reply@example.com>
-APP_URL=http://localhost:3000
-SESSION_SECRET=replace-with-a-long-random-secret
-```
+- Assign existing Workers to jobs.
+- View Workers' responses to job offers.
+- Reassign jobs when required.
 
-Reset links expire after 30 minutes and can only be used once. In production, set `APP_URL` to the deployed application URL and use an SMTP provider with TLS enabled.
+#### Features Added After Assignment 1
 
-Forgot-password reset links expire after 30 minutes and can only be used once. On the Payroll page, **Generate Payslips** followed by **Confirm & Push** publishes each eligible worker's payslip in the Worker app's **Pay Slip** view, where it can be viewed and downloaded. No payslip email is sent. Workers need approved hours and a configured hourly rate. Payslips use [ATO Australian resident income-tax brackets](https://www.ato.gov.au/tax-rates-and-codes/tax-rates-australian-residents) for the pay period's financial year, annualising weekly pay across 52 weeks. For 2026–27, income up to `$18,200` is tax-free and the next bracket is 15%. The estimate excludes the Medicare levy, offsets, and other deductions.
+##### 3. Worker Account Management
 
-YTD totals accumulate approved weekly payroll amounts from 1 July. The hourly rate is snapshotted when hours are approved; older approved jobs without a snapshot use the worker's currently configured rate.
+- Add Worker accounts with a name, email, phone number and temporary password.
+- Activate or deactivate Worker accounts.
+- Configure Worker hourly rates.
 
-Worker management endpoints require an owner session established by sign-in. Configure a stable, private `SESSION_SECRET` in deployed environments and use a persistent session store for production; the default in-memory store is for local development only.
+##### 4. Timesheet Review and Approval
 
-## Worker Management Pages
+- Review submitted jobs, completion notes and photos.
+- Review recorded clock-in and clock-out times.
+- Select Actual, Scheduled or Manual values for each time entry.
+- Approve working hours and record the hourly rate used for payroll.
+- Undo approval to return a timesheet to pending approval.
 
-- `workers/workers.html` lists all workers and lets an Owner activate or deactivate accounts.
-- `workers/add-worker.html` is the separate Add Worker form. Name, email, phone, and a temporary password are required.
-- The Owner dashboard's **Workers** navigation opens the workers list; successful creation returns there.
-- **My Profile** is available to both roles at `my-account/my-account.html`. Signed-in users can change their password by entering their current password and a new password.
+##### 5. Payroll and Payslips
 
-## Timesheet Approval
+- Review approved weekly hours and payroll estimates.
+- View gross pay, tax estimates, superannuation, net pay and YTD totals.
+- Generate and push payslips to Workers through the application.
+- Save pay-period details in MongoDB when payslips are pushed.
+- Preserve released payslip details when job records or hourly rates change.
 
-- Workers may clock in/out on accepted jobs, but clocking is optional. **Submit completed job** can be used without punches, a note, or photos; submission changes the job status to `Finished` and sends it for Owner approval. Workers may optionally include a note and up to five JPG, PNG, or WebP photos.
-- Owners open `time-sheet/timesheets.html` from the Owner dashboard's **Timesheets** navigation to review every assigned job in the selected Monday-to-Sunday week.
-- Clock In and Clock Out are approved independently. The Owner can choose Actual, Scheduled, or Manual for each. Actual is the default when a punch exists; when there is no punch, the Owner enters the time manually. Until approval, both the Owner and assigned Worker see `Pending approval`.
-- Select a job title or **View task details** to open `completed job/completed-job.html`, which shows the client, Worker, scheduled and actual punches, approved times, total, completion note, and photos. Owners and the assigned Worker can view the Finished job.
-- Approval records store the selected time sources, approval timestamp, and Owner account. Completion photos are stored outside the public web root in `.private-uploads/jobs`; production deployments need persistent private file storage.
+##### 6. Profile and Account
 
-## Architecture Summary
+- Update the signed-in Owner's profile details.
+- Change the account password by entering the current password and a new password.
 
-The application uses HTML, CSS, client-side JavaScript, an Express API, and MongoDB for persistent users and jobs. Sessions use Express's in-memory store by default, which is suitable only for local development.
+### Worker Features
 
-## Known Limitations
+#### Features Completed in Assignment 1
 
-This is a prototype and may not include every function shown in the Figma design. Production use requires a persistent session store, secure environment configuration, SMTP for forgot-password emails, and persistent private storage for completion photos and generated payslip PDFs.
+##### 1. Calendar and Assigned Jobs
 
-## Deployment
+- View assigned jobs in a two-week calendar.
+- Select a date to view its assigned jobs.
+- View task details, scheduled times, location and client contact information.
 
-Deployment URL: http://13.211.204.157/login/login.html
+##### 2. Job Offer Responses
+
+- Accept pending job offers.
+- Decline pending job offers.
+
+##### 3. Time Recording and Job Completion
+
+- Clock in and out on accepted jobs.
+- Submit completed jobs.
+- Add optional completion notes.
+- Upload optional completion photos.
+
+#### Features Added After Assignment 1
+
+##### 4. Timesheet Approval Information
+
+- View whether a completed job is awaiting approval or has been approved.
+- View approved working-time information for completed jobs.
+
+##### 5. Payslips
+
+- View payslips released by the Owner.
+- Review pay-period details, daily hours and YTD totals.
+- Download payslips as PDFs generated from saved pay-period records.
+- Access only the signed-in Worker's own payslips.
+
+##### 6. Profile and Account
+
+- Update the signed-in Worker's profile details.
+- Change the account password by entering the current password and a new password.
+
+### Improvements to Existing Features
+
+#### 1. Persistent Photo Storage
+
+- Store completion photos in MongoDB GridFS.
+- Keep photos available after application redeployment.
+- Check access before serving photos to an Owner or the assigned Worker.
+
+#### 2. Reliable Completion Submission
+
+- Prevent repeated submissions from overwriting completed-job information.
+- Attempt to clean up uploaded photos when submission fails.
+
+#### 3. Shared Interface Styling
+
+- Use a shared global stylesheet for common interface rules.
+- Apply consistent alignment to calendar dates and avatar initials across pages.
+
+## 3 ways to Setup
+
+###  Way 1: Deploy on Render
+
+1. Push the project to GitHub.
+
+2. Sign in to Render and select **New → Web Service**.
+
+3. Connect GitHub and select the project repository.
+
+4. Configure the service:
+
+   | Setting | Value |
+   |---|---|
+   | Runtime | Node |
+   | Branch | main |
+   | Root Directory | Leave blank |
+   | Build Command | npm install |
+   | Start Command | node server.js |
+
+5. Add these environment variables:
+
+   | Key | Value |
+   |---|---|
+   | MONGODB_URI | Your MongoDB Atlas connection string |
+   | SESSION_SECRET | A long, private random secret |
+   | NODE_ENV | production |
+
+6. Add the service's outbound IP addresses from **Render → Connect → Outbound** to the MongoDB Atlas **Network Access** list.
+
+7. Select **Deploy Web Service** and wait for deployment to complete.
+
+8. Open the Render URL followed by `/login/login.html`.
+
+#####  Live Application
+
+https://test-aunk.onrender.com/login/login.html
+
+### Way 2: Deploy on AWS EC2
+
+1. Launch an Ubuntu EC2 instance with a public IP address and an SSH key pair.
+
+2. Configure its security group:
+
+   | Port | Purpose | Source |
+   |---|---|---|
+   | 22 | SSH | Your IP address |
+   | 3000 | Application | Allow visitors to the demo |
+
+3. Connect to the instance using SSH:
+
+   ```bash
+   chmod 400 your-key.pem
+   ssh -i your-key.pem ubuntu@your-ec2-public-ip
+   ```
+
+4. Install Git and a supported Node.js LTS version, including npm.
+
+5. Clone the repository and install dependencies:
+
+   ```bash
+   git clone https://github.com/Krisy-uni/test.git
+   cd test
+   npm install
+   ```
+
+6. Create a `.env` file in the project root:
+
+   ```env
+   MONGODB_URI=your-mongodb-connection-string
+   SESSION_SECRET=your-private-random-session-secret
+   NODE_ENV=development
+   ```
+
+   This configuration is for an HTTP demonstration. For production,
+   configure HTTPS and use `NODE_ENV=production`.
+
+7. Add the EC2 public IP address to MongoDB Atlas's
+   **Network Access** list.
+
+8. Start the application:
+
+   ```bash
+   node server.js
+   ```
+
+9. Open:
+
+   ```text
+   http://your-ec2-public-ip:3000/login/login.html
+   ```
+
+The server runs while the terminal process remains active.
+For continuous hosting, configure a process manager or system service.
+
+Photos and released payslip details remain in MongoDB.
+No local persistent storage is required for these features.
+
+### Way 3: Local Setup
+
+1. Clone the repository and open the project folder:
+
+   ```bash
+   git clone https://github.com/Krisy-uni/test.git
+   cd test
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env` file in the project root:
+
+   ```env
+   MONGODB_URI=your-mongodb-connection-string
+   SESSION_SECRET=your-private-random-session-secret
+   NODE_ENV=development
+   ```
+
+4. In MongoDB Atlas, allow your computer's IP address under **Network Access**. Use the database containing the demo accounts.
+
+5. Start the server:
+
+   ```bash
+   node server.js
+   ```
+
+6. Open http://localhost:3000/login/login.html and sign in using a demo account.
+
+Node.js and npm must be installed. Do not commit your `.env` file to GitHub.
+
+
+
+# System Overview
+
+## Job Scheduling and Allocation
+
+Owners create jobs by entering the task, date, start and end times,
+location and client contact details. They then assign a Worker to
+each job.
+
+Workers can accept or decline job offers. Owners can reassign a job
+to another Worker when needed.
+
+Both roles use the calendar to view jobs by date. Coloured indicators
+show whether jobs are Pending, Accepted, Declined or Finished.
+
+## Worker Management
+
+Owners can add Workers, activate or deactivate their accounts,
+and set their hourly rates.
+
+To add a Worker, the Owner enters their name, email address, phone
+number and a temporary password.
+
+## Job Completion and Timesheet Approval
+
+Workers can clock in and out, add a completion note, upload photos
+and submit a completed job. Clock records, notes and photos are optional.
+
+Workers can upload up to 10 JPG, PNG or WebP photos, with a maximum
+size of 5 MB each.
+
+After submission, the job is marked Finished and awaits the Owner's
+approval of its working hours.
+
+The Owner reviews the job and chooses the start and end times using:
+
+- Actual clock records.
+- Scheduled job times.
+- Manually entered times.
+
+The Owner can undo an approval if a correction is needed. This does
+not change a payslip that has already been released.
+
+## Completed Job Details and Photos
+
+Owners and assigned Workers can view completed job details, including
+working times, completion notes, photos and approval information.
+
+Photos are saved in MongoDB rather than on the hosting server.
+They remain available after the application is redeployed.
+
+## Payroll and Payslips
+
+Owners review approved weekly hours and select Generate Payslips,
+then Confirm & Push.
+
+Each Worker's payslip details are saved in MongoDB when pushed.
+Workers can then view their payslips and download them as PDFs.
+
+Released payslips keep the details saved at the time of pushing.
+Changing a Worker's hours or hourly rate later does not change
+an existing payslip.
+
+Each Worker can receive one payslip per week. Pushing the same week
+again does not replace it. Payslips are shared through the app,
+not by email.
+
+### Payroll Calculations
+
+Pay is calculated from approved working hours and hourly rates.
+
+The payslip shows gross pay, estimated tax, superannuation, net pay
+and year-to-date (YTD) totals. YTD covers the financial year starting
+on 1 July.
+
+Superannuation is calculated at 12%. Tax is an estimate and does not
+include the Medicare levy, offsets or other deductions.
+
+## My Profile
+
+Owners and Workers can update their profile details and change their
+password while signed in.
+
+Email-based password recovery is not currently available.
+
+## How Data Is Stored
+
+The website uses an Express backend to save and retrieve data from
+MongoDB.
+
+MongoDB stores accounts, jobs, completion photos and released
+payslip details. When a Worker downloads a payslip, the backend
+creates a PDF from the saved details.
+
+Users may need to sign in again after the server restarts.
+
+## Current Limitations
+
+- Forgotten passwords cannot currently be reset by email.
+- Released payslips cannot be corrected or replaced through the app.
+- Changes to older job records may affect YTD totals in future
+  payslips. Already released payslips remain unchanged.
+- Payroll figures are estimates.
+- Photos lost before the storage update need to be uploaded again.
+
+## Before Real Business Use
+
+The application is a prototype. Before using it for real business
+operations, it needs further work on login-session storage,
+account security, backups and payroll accuracy.
