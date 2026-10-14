@@ -67,7 +67,7 @@
   }
 
  const appFrame = navHost.closest(
-  '.owner-view, .worker-view > .div'
+  '.owner-view, .worker-view > .div, .owner-view-empty .frame'
 );
 
 navHost.replaceWith(navigation);

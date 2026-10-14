@@ -85,3 +85,31 @@ a {
   flex: 0 0 7px !important;
   border-radius: 50% !important;
 }
+
+/* Shared Worker-selection circles: centre both initial and selected dots. */
+:is(
+  .allocate-worker .text-32,
+  .allocate-worker .text-34,
+  .reallocate-worker .text-24
+) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+:is(
+  .allocate-worker .text-32,
+  .allocate-worker .text-34,
+  .reallocate-worker .text-24
+) > :is(.text-33, .selected-radio-dot, .selected-dot) {
+  position: static !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 10px !important;
+  height: 10px !important;
+  flex: 0 0 10px !important;
+  border-radius: 50% !important;
+}
