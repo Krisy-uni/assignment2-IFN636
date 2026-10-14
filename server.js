@@ -21,7 +21,6 @@ const {
 } = require('./payroll/payroll-calculations');
 const { isClockInPastGracePeriod } = require('./worker-time-rules');
 const session = require('express-session');
-const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 
@@ -46,8 +45,6 @@ app.get('/', (req, res) => {
   res.redirect('/login/login.html');
 });
 
-const payslipsDirectory = path.join(__dirname, '.private-uploads', 'payslips');
-fs.mkdirSync(payslipsDirectory, { recursive: true });
 
 const photoExtensions = {
   'image/jpeg': '.jpg',
