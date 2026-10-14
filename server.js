@@ -1237,7 +1237,9 @@ app.post('/api/payroll/send-payslips', requireOwner, async (req, res) => {
         gross: roundMoney(prior.gross + gross),
         superAmount: roundMoney(prior.superAmount + currentSuper),
         tax: roundMoney(prior.tax + currentTax),
-        netPay: roundMoney(prior.netPay ?? (prior.gross - prior.tax) + gross - currentTax)
+      netPay: roundMoney(
+  (prior.netPay ?? (prior.gross - prior.tax)) + gross - currentTax
+)
       };
       const payslip = {
         worker: entry.worker,
@@ -1259,21 +1261,78 @@ app.post('/api/payroll/send-payslips', requireOwner, async (req, res) => {
         },
         ytd
       };
-      payslip.pdf = await createPayslipPdfBuffer(payslip);
+      
       return payslip;
     }));
 
-    // Save generated PDF files to payslipsDirectory
-    for (const payslip of payslips) {
-      const workerSlug = (payslip.worker?.name || 'worker').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      const pdfPath = path.join(payslipsDirectory, `payslip-${workerSlug}-${week.start}.pdf`);
-      try {
-        fs.writeFileSync(pdfPath, payslip.pdf);
-      } catch (e) {
-        console.error('Failed to write payslip PDF to disk:', e);
-      }
+    // Save the released payslip details in MongoDB.
+await Payslip.init();
+
+const sentAt = new Date();
+
+for (const payslip of payslips) {
+  const days = Array(7).fill(0);
+
+  for (const job of payslip.jobs) {
+    const day = new Date(`${job.date}T00:00:00.000Z`);
+    const index = (day.getUTCDay() + 6) % 7;
+    days[index] += job.minutes;
+  }
+
+  const snapshot = {
+    worker: {
+      name: payslip.worker.name,
+      email: payslip.worker.email,
+      hourlyRate: payslip.worker.hourlyRate
+    },
+    week: payslip.week,
+    yearStart,
+    days,
+    jobs: payslip.jobs,
+    minutes: payslip.minutes,
+    rate: payslip.rate,
+    gross: payslip.gross,
+    superAmount: payslip.superAmount,
+    tax: payslip.tax,
+    netPay: payslip.netPay,
+    current: payslip.current,
+    ytd: payslip.ytd
+  };
+
+  try {
+    await Payslip.updateOne(
+      {
+        workerId: payslip.worker._id,
+        weekStart: week.start
+      },
+      {
+        $setOnInsert: {
+          workerId: payslip.worker._id,
+          weekStart: week.start,
+          weekEnd: week.end,
+          sentAt,
+          sentBy: req.owner._id,
+          snapshot
+        }
+      },
+      { upsert: true, runValidators: true }
+    );
+  } catch (error) {
+    // A concurrent push may already have saved this payslip.
+    if (error.code !== 11000) {
+      throw error;
     }
 
+    const existing = await Payslip.exists({
+      workerId: payslip.worker._id,
+      weekStart: week.start
+    });
+
+    if (!existing) {
+      throw error;
+    }
+  }
+}
     // Mark all jobs in this week as payslipSentAt
     const now = new Date();
     await Job.updateMany(
