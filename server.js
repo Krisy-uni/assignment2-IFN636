@@ -1477,18 +1477,63 @@ app.get('/api/jobs/:id/completed-details', requireCompletedJobAccess, async (req
   }
 });
 
+
 app.get('/api/completed-jobs/:id/photos/:filename', requireCompletedJobAccess, async (req, res) => {
   try {
     const filename = path.basename(req.params.filename);
     const job = req.completedJob;
 
     if (!job || !job.completionPhotos.includes(filename)) {
-      return res.status(404).json({ message: 'Photo not found.' });
+      return res.status(404).json({
+        message: 'Photo not found.'
+      });
     }
 
-    res.sendFile(path.join(jobUploadDirectory, filename));
+    const bucket = getPhotoBucket();
+
+    const files = await bucket.find({
+      filename,
+      'metadata.jobId': String(job._id)
+    }).limit(1).toArray();
+
+    if (!files.length) {
+      return res.status(404).json({
+        message: 'Photo file is missing.'
+      });
+    }
+
+    const photo = files[0];
+
+    res.setHeader(
+      'Content-Type',
+      photo.metadata?.contentType || 'application/octet-stream'
+    );
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    const download = bucket.openDownloadStream(photo._id);
+
+    download.on('error', error => {
+      console.error('Photo download failed:', error);
+
+      if (!res.headersSent) {
+        res.removeHeader('Content-Type');
+        res.status(500).json({
+          message: 'Unable to load photo.'
+        });
+      } else {
+        res.destroy();
+      }
+    });
+
+    res.on('close', () => download.destroy());
+    download.pipe(res);
   } catch (error) {
-    res.status(404).json({ message: 'Photo not found.' });
+    console.error('Photo request failed:', error);
+
+    res.status(500).json({
+      message: 'Unable to load photo.'
+    });
   }
 });
 
