@@ -82,13 +82,3 @@
 }
 
 
-
-.worker-view .app-bottom-nav,
-.owner-view .app-bottom-nav {
-  position: absolute;
-  top: auto;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-}
