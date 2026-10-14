@@ -1016,7 +1016,7 @@ if (released) {
       weekEnd: week.end,
       yearStart,
       days,
-      isSent: currentJobs.length > 0 && currentJobs.every(j => Boolean(j.payslipSentAt)),
+     isSent: false,
       current: {
         minutes: currentMinutes,
         gross: currentGross,
@@ -1042,112 +1042,52 @@ if (released) {
 app.get('/api/worker/payslip/download', requireWorker, async (req, res) => {
   try {
     const week = getWeekRange(req.query.weekStart);
+
     if (!week) {
-      return res.status(400).json({ message: 'A valid weekStart date is required.' });
-    }
-
-    const workerName = req.worker.name;
-    const workerSlug = workerName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const pdfFilename = `payslip-${workerSlug}-${week.start}.pdf`;
-    const pdfPath = path.join(payslipsDirectory, pdfFilename);
-
-    if (fs.existsSync(pdfPath)) {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${pdfFilename}"`);
-      return res.sendFile(pdfPath);
-    }
-
-    // Generate on the fly if not yet on disk
-    const yearStart = getAustralianFinancialYearStart(week.end);
-    const currentJobs = await Job.find({
-      date: { $gte: week.start, $lte: week.end },
-      assignedWorker: workerName,
-      hoursApprovalStatus: 'Approved'
-    }).sort({ date: 1, startTime: 1 });
-
-    const priorJobs = await Job.find({
-      date: { $gte: yearStart, $lt: week.start },
-      assignedWorker: workerName,
-      hoursApprovalStatus: 'Approved'
-    }).sort({ date: 1, startTime: 1 });
-
-    const workersByName = new Map([[workerName, req.worker]]);
-    const priorYtdList = aggregateYtdPayroll(priorJobs, workersByName);
-    const priorYtd = priorYtdList.length ? priorYtdList[0] : {
-      minutes: 0,
-      gross: 0,
-      superAmount: 0,
-      tax: 0,
-      net: 0,
-      missingRate: false
-    };
-
-    let currentMinutes = 0;
-    const lines = [];
-    currentJobs.forEach(job => {
-      const minutes = getApprovedJobMinutes(job) || 0;
-      currentMinutes += minutes;
-      const rate = job.approvedHourlyRate ?? req.worker.hourlyRate ?? 0;
-      const amount = roundMoney((minutes / 60) * rate);
-      lines.push({
-        title: job.title || 'Job',
-        date: job.date,
-        minutes,
-        rate,
-        amount
+      return res.status(400).json({
+        message: 'A valid weekStart date is required.'
       });
-    });
+    }
 
-    const gross = lines.reduce((total, job) => total + job.amount, 0);
-    const currentTax = calculateWeeklyTax(gross, yearStart);
-    const currentSuper = roundMoney(gross * 0.12);
-    const currentRate = currentMinutes > 0 ? roundMoney(gross / (currentMinutes / 60)) : Number(req.worker.hourlyRate || 0);
+    const released = await Payslip.findOne({
+      workerId: req.worker._id,
+      weekStart: week.start
+    }).lean();
 
-    const ytd = {
-      minutes: priorYtd.minutes + currentMinutes,
-      rate: priorYtd.minutes + currentMinutes > 0
-        ? roundMoney(((priorYtd.gross || 0) + gross) / ((priorYtd.minutes + currentMinutes) / 60))
-        : currentRate,
-      gross: roundMoney((priorYtd.gross || 0) + gross),
-      superAmount: roundMoney((priorYtd.superAmount || 0) + currentSuper),
-      tax: roundMoney((priorYtd.tax || 0) + currentTax),
-      netPay: roundMoney(((priorYtd.gross || 0) - (priorYtd.tax || 0)) + gross - currentTax)
-    };
+    if (!released) {
+      return res.status(404).json({
+        message: 'This payslip has not been released yet.'
+      });
+    }
 
-    const payslip = {
-      worker: req.worker,
-      week,
-      jobs: lines,
-      minutes: currentMinutes,
-      rate: currentRate,
-      gross,
-      superAmount: currentSuper,
-      tax: currentTax,
-      netPay: roundMoney(gross - currentTax),
-      current: {
-        minutes: currentMinutes,
-        rate: currentRate,
-        superAmount: currentSuper,
-        gross,
-        tax: currentTax,
-        netPay: roundMoney(gross - currentTax)
-      },
-      ytd
-    };
+    const pdfBuffer = await createPayslipPdfBuffer(
+      released.snapshot
+    );
 
-    const pdfBuffer = await createPayslipPdfBuffer(payslip);
-    try {
-      fs.writeFileSync(pdfPath, pdfBuffer);
-    } catch (e) {}
+    const workerSlug = released.snapshot.worker.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'worker';
+
+    const filename =
+      `payslip-${workerSlug}-${released.weekStart}.pdf`;
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${pdfFilename}"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${filename}"`
+    );
+    res.setHeader('Cache-Control', 'private, no-store');
+
     res.send(pdfBuffer);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Payslip download failed:', error);
+
+    res.status(500).json({
+      message: 'Unable to download payslip.'
+    });
   }
 });
-
 app.get('/api/payroll/ytd', requireOwner, async (req, res) => {
   try {
     const through = String(req.query.through || '');
